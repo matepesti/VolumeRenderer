@@ -112,7 +112,7 @@ void TransferFunction::drawUI() {
 	ImGui::Begin("Transfer Function");
 
 	ImVec2 canvasPos = ImGui::GetCursorScreenPos();
-	ImVec2 canvasSize = ImVec2(ImGui::GetContentRegionAvail().x, 150);
+	ImVec2 canvasSize = ImVec2(ImGui::GetContentRegionAvail().x, m_canvasHeight);
 
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
@@ -185,6 +185,13 @@ void TransferFunction::drawUI() {
 
 	ImGui::SetCursorScreenPos(canvasPos);
 	ImGui::InvisibleButton("canvas", canvasSize);
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+	ImGui::Button("##resize", ImVec2(ImGui::GetContentRegionAvail().x, 4.0f));
+	ImGui::PopStyleColor();
+	if (ImGui::IsItemActive()) {
+		m_canvasHeight += ImGui::GetIO().MouseDelta.y;
+		m_canvasHeight = std::clamp(m_canvasHeight, 80.0f, 400.0f);
+	}
 	if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
 		ImVec2 mousePos = ImGui::GetMousePos();
 		float t = (mousePos.x - canvasPos.x) / canvasSize.x;
@@ -344,10 +351,10 @@ void TransferFunction::loadPreset(const std::string& name) {
 	else if (name == "ct_soft") {
 		m_controlPoints = {
 			{0.0f,  0.0f,  glm::vec3(0.0f, 0.0f, 0.0f)},
-			{0.2f,  0.0f,  glm::vec3(0.8f, 0.3f, 0.2f)},
-			{0.35f, 0.15f, glm::vec3(1.0f, 0.6f, 0.4f)},
-			{0.5f,  0.3f,  glm::vec3(1.0f, 0.8f, 0.6f)},
-			{0.65f, 0.0f,  glm::vec3(1.0f, 1.0f, 1.0f)},
+			{0.25f, 0.0f,  glm::vec3(0.8f, 0.3f, 0.2f)},
+			{0.35f, 0.04f, glm::vec3(1.0f, 0.6f, 0.4f)},
+			{0.5f,  0.08f, glm::vec3(1.0f, 0.8f, 0.6f)},
+			{0.6f,  0.0f,  glm::vec3(1.0f, 1.0f, 1.0f)},
 			{1.0f,  0.0f,  glm::vec3(1.0f, 1.0f, 1.0f)}
 		};
 	}

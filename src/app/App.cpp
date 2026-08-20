@@ -157,7 +157,7 @@ void App::init() {
     glfwSetCursorPosCallback(m_window, s_mouseMoveCallback);
     glfwSetScrollCallback(m_window, s_scrollCallback);
 
-    if (m_volume.load("C:/Users/Pesti Máté/source/repos/VolumeRenderer/data/emd_11457.map")) {
+    if (m_volume.load("C:/Users/Pesti Máté/source/repos/VolumeRenderer/data/emd_1080.map")) {
         m_volume.uploadToGPU();
 
         printf("Loaded: %d x %d x %d, spacing %.3f %.3f %.3f\n",m_volume.getNx(), m_volume.getNy(), m_volume.getNz(),m_volume.getSpacingX(), m_volume.getSpacingY(), m_volume.getSpacingZ());
@@ -184,6 +184,8 @@ void App::init() {
 
     // dark theme
     ImGui::StyleColorsDark();
+    io.FontGlobalScale = 1.0f;  // change to 1.5f for 150% scale
+    ImGui::GetStyle().ScaleAllSizes(1.0f);  // scales padding, borders, etc.
 
     // bind ImGui to our GLFW window and OpenGL 4.5
     ImGui_ImplGlfw_InitForOpenGL(m_window, true);

@@ -20,6 +20,7 @@ private:
 	int m_dragIndex = -1;
 	int m_selectedPoint = -1;
 	static const int TEXTURE_SIZE = 256;
+	float m_canvasHeight = 150.0f;
 
 	void bake();
 	void sortControlPoints();
