@@ -1,0 +1,30 @@
+# Build output
+out/
+.vs/
+*.exe
+*.lib
+*.dll
+*.obj
+*.pdb
+*.ilk
+*.exp
+
+# Data files
+data/*.mrc
+data/*.map
+data/*.nii
+data/*.gz
+
+# Config generated at runtime
+*.cfg
+
+# ImGui saved layout
+imgui.ini
+
+# CMake generated
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Large third party source distributions
+third_party/zlib-1.3.2/
