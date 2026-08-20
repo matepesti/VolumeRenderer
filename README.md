@@ -4,7 +4,12 @@ A real-time GPU-accelerated volume renderer built in C++ with OpenGL 4.5. Implem
 
 ## Screenshots
 
-<!-- Add screenshots here after taking them with the Export PNG button -->
+![DVR Mode](screenshots/DVR.png)
+![MIP Mode](screenshots/MIP.png)
+![MinIP Mode](screenshots/MinIP.png)
+![Isosurface](screenshots/isosurface.png)
+![Smoothening](screenshots/DVR-smoothened.png)
+![Clipping Plane (x-axis)](screenshots/DVR-x-axis-cut.png)
 
 ## Features
 
