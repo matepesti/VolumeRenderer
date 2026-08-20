@@ -13,12 +13,12 @@ A real-time GPU-accelerated volume renderer built in C++ with OpenGL 4.5. Implem
 
 ## Features
 
-- Real-time ray marching via GLSL fragment shader — one ray per pixel, fully GPU-side
+- Real-time ray marching via GLSL fragment shader. One ray per pixel, fully GPU-side
 - Interactive transfer function editor with draggable control points, histogram background, and preset configurations
 - Four compositing modes: DVR (direct volume rendering with Phong lighting), MIP, MinIP, and hard isosurface
 - Gradient-based Phong lighting using central difference approximation of the density gradient
 - GPU Gaussian smoothing via separable compute shader (three 1D passes, ping-pong textures)
-- Interactive clipping plane — axis-aligned with offset slider, or free placement via Shift+drag
+- Interactive clipping plane: axis-aligned with offset slider, or free placement via Shift+drag
 - Anatomical view presets: axial, coronal, sagittal
 - Supports MRC/MAP (cryo-EM, EMDB) and NIfTI (CT/MRI, .nii) volume formats
 
@@ -28,7 +28,7 @@ A real-time GPU-accelerated volume renderer built in C++ with OpenGL 4.5. Implem
 
 **Transfer function:** A 1D texture mapping normalized density values to RGBA color and opacity. The user places control points on an interactive canvas; the texture is baked via piecewise linear interpolation between control points and uploaded to the GPU on every edit.
 
-**Gradient lighting:** At each sample point the density gradient is approximated using central differences — six texture samples in the ±X, ±Y, ±Z directions. The normalized gradient is used as a surface normal for Phong shading with ambient, diffuse, and specular components.
+**Gradient lighting:** At each sample point the density gradient is approximated using central differences. Six texture samples in the ±X, ±Y, ±Z directions. The normalized gradient is used as a surface normal for Phong shading with ambient, diffuse, and specular components.
 
 **Separable Gaussian smoothing:** A 3D Gaussian blur is decomposed into three sequential 1D compute shader passes (X, Y, Z). Each pass reads from one 3D texture and writes to another (ping-pong pattern). This reduces complexity from O(r³) to O(3r) samples per voxel.
 
@@ -45,12 +45,12 @@ A real-time GPU-accelerated volume renderer built in C++ with OpenGL 4.5. Implem
 
 All dependencies are included in `third_party/` or linked as precompiled binaries:
 
-- GLFW 3.4 — window creation and input
-- GLAD — OpenGL 4.5 function loader
-- GLM — mathematics library
-- Dear ImGui (docking branch) — immediate mode UI
-- nativefiledialog-extended — OS native file picker
-- stb_image_write — PNG export
+- GLFW 3.4 - window creation and input
+- GLAD - OpenGL 4.5 function loader
+- GLM - mathematics library
+- Dear ImGui (docking branch) - immediate mode UI
+- nativefiledialog-extended - OS native file picker
+- stb_image_write - PNG export
 
 ### Steps
 
@@ -73,5 +73,4 @@ Place downloaded files in the `data/` folder and open them via the "Open Volume"
 ## Technical notes
 
 - Tested on NVIDIA GeForce RTX 2060 and Intel Iris Xe
-- On integrated graphics cards, the compute shader smoothing pass may be slow at high sigma values
 - NIfTI support covers uncompressed .nii files; .nii.gz requires manual decompression before loading
