@@ -10,6 +10,8 @@ A real-time GPU-accelerated volume renderer built in C++ with OpenGL 4.5. Implem
 ![Isosurface](screenshots/isosurface.png)
 ![Smoothening](screenshots/DVR-smoothened.png)
 ![Clipping Plane (x-axis)](screenshots/DVR-x-axis-cut.png)
+![Pelvic bone CT](screenshots/pelvis_fullCT.png)
+![Pelvic bone CT cut on x-axis](screenshots/pelvis_CT_x-axis_cut.png)
 
 ## Features
 
