@@ -4,6 +4,7 @@
 #include "renderer/VolumeRenderer.h"
 #include "Config.h"
 #include "ui/TransferFunction.h"
+#include <memory>
 struct GLFWwindow;  // forward declare so no need to include glfw here
 
 class App{
@@ -32,6 +33,7 @@ public:
 
     Volume m_volume;
     VolumeRenderer m_volumeRenderer;
+    std::unique_ptr<Volume> m_pendingVolume;
     AppConfig m_config;
     std::string m_configPath;
 

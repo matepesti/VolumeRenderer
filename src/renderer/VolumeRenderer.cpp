@@ -37,6 +37,8 @@ void VolumeRenderer::init(const std::string& exeDir) {
 }
 
 void VolumeRenderer::render(const Camera& cam, Volume& vol) {
+	if (!vol.isValid())
+		return;
 
 	m_shader.use();
 
@@ -74,10 +76,16 @@ void VolumeRenderer::render(const Camera& cam, Volume& vol) {
 
 	if (m_smoothSigma > 0.01f) {
 		if (m_smoothSigma != m_lastSmoothedSigma) {
-			m_smoothedTexID = m_smoothPass.run(vol.getTextureID(), vol.getNx(), vol.getNy(), vol.getNz(), m_smoothSigma);
+			m_smoothedTexID = m_smoothPass.run(vol.getTextureID(),vol.getNx(),vol.getNy(),vol.getNz(),m_smoothSigma);
 			m_lastSmoothedSigma = m_smoothSigma;
 		}
-		volumeToRender = m_smoothedTexID;
+
+		if (m_smoothedTexID != 0) {
+			volumeToRender = m_smoothedTexID;
+		}
+	}
+	else if (m_smoothedTexID != 0) {
+		releaseSmoothingResources();
 	}
 
 	glActiveTexture(GL_TEXTURE0);
@@ -153,6 +161,11 @@ void VolumeRenderer::setClipPlane(glm::vec3 normal, float offset) {
 
 void VolumeRenderer::resetSmoothing() {
 	m_smoothSigma = 0.0f;
-	m_lastSmoothedSigma = -1.0f;
+	releaseSmoothingResources();
+}
+
+void VolumeRenderer::releaseSmoothingResources() {
+	m_smoothPass.release();
 	m_smoothedTexID = 0;
+	m_lastSmoothedSigma = -1.0f;
 }

@@ -8,7 +8,6 @@ struct ConfigControlPoint {
 };
 
 struct AppConfig {
-    std::string lastVolumePath;
     float smoothSigma = 0.0f;
     int renderMode = 0;
     float isoValue = 0.5f;

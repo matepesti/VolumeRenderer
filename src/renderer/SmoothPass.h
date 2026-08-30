@@ -14,4 +14,5 @@ private:
 public:
 	GLuint run(GLuint sourceTexture, int nx, int ny, int nz, float sigma);
 	void init(const std::string& compPath);
+	void release();
 };

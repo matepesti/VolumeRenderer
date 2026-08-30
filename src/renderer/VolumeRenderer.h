@@ -33,17 +33,18 @@ public:
 	void offsetClip(float worldDelta);
 	void setClipPlane(glm::vec3 normal, float offset);
 	void resetSmoothing();
+	void releaseSmoothingResources();
 
-	float getSmoothSigma() { return m_smoothSigma; }
-	int getRenderMode() { return m_renderMode; }
-	float getIsoValue() { return m_isoValue; }
-	bool getClipEnabled() { return m_clipEnabled; }
-	float getClipOffset() { return m_clipOffset; }
-	int getClipAxis() { return m_clipAxis; }
+	const float getSmoothSigma() const { return m_smoothSigma; }
+	const int getRenderMode() const { return m_renderMode; }
+	const float getIsoValue() const { return m_isoValue; }
+	const bool getClipEnabled() const { return m_clipEnabled; }
+	const float getClipOffset() const { return m_clipOffset; }
+	const int getClipAxis() const { return m_clipAxis; }
 	void setSmoothSigma(float smoothSigma) { m_smoothSigma = smoothSigma; }
 	void setRenderMode(int renderMode) { m_renderMode = renderMode; }
 	void setClipEnabled(bool enabled) { m_clipEnabled = enabled; }
 	void setIsoValue(float isoValue) { m_isoValue = isoValue; }
 	void setClipOffset(float clipOffset) { m_clipOffset = clipOffset; }
-	void setClipAxis(int clipAxis) { m_clipAxis = m_clipAxis; }
+	void setClipAxis(int clipAxis) { m_clipAxis = clipAxis; }
 };

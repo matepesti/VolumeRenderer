@@ -7,17 +7,17 @@
 
 class Volume {
 private:
-	int32_t nx;
-	int32_t ny;
-	int32_t nz;
-	float spacingX;
-	float spacingY;
-	float spacingZ;
-	float minValue;
-	float maxValue;
-	float normalizedSizeX;
-	float normalizedSizeY;
-	float normalizedSizeZ;
+	int32_t nx = 0;
+	int32_t ny = 0;
+	int32_t nz = 0;
+	float spacingX = 1.0f;
+	float spacingY = 1.0f;
+	float spacingZ = 1.0f;
+	float minValue = 0.0f;
+	float maxValue = 1.0f;
+	float normalizedSizeX = 1.0f;
+	float normalizedSizeY = 1.0f;
+	float normalizedSizeZ = 1.0f;
 	std::vector<float> data;
 	GLuint textureID = 0;
 	int32_t mode = 0;
@@ -25,21 +25,30 @@ private:
 	bool isCompressed = false;
 	int totalVoxels = 0;
 
-	bool normalizeAndUpload(int mode, FILE* f,bool ext);
-
-
 public:
-	int32_t getNx() { return nx; }
-	int32_t getNy() { return ny; }
-	int32_t getNz() { return nz; }
-	float getSpacingX() { return spacingX; }
-	float getSpacingY() { return spacingY; }
-	float getSpacingZ() { return spacingZ; }
-	GLuint getTextureID() { return textureID; }
-	int32_t getMode() { return mode; }
-	int32_t getNSYMBT() { return nsymbt; }
-	float getMinValue() { return minValue; }
-	float getMaxValue() { return maxValue; }
+	Volume() = default;
+
+	// copying an OpenGL texture would be unsafe
+	Volume(const Volume&) = delete;
+	Volume& operator=(const Volume&) = delete;
+
+	// Moving ownership of the OpenGL texture
+	Volume(Volume&& other) noexcept;
+	Volume& operator=(Volume&& other) noexcept;
+
+	~Volume();
+
+	const int32_t getNx() const { return nx; }
+	const int32_t getNy() const { return ny; }
+	const int32_t getNz() const { return nz; }
+	const float getSpacingX() const { return spacingX; }
+	const float getSpacingY() const { return spacingY; }
+	const float getSpacingZ() const { return spacingZ; }
+	const GLuint getTextureID() const { return textureID; }
+	const int32_t getMode() const { return mode; }
+	const int32_t getNSYMBT() const { return nsymbt; }
+	const float getMinValue() const { return minValue; }
+	const float getMaxValue() const { return maxValue; }
 
 	bool loadMRC(const std::string& path);
 	bool loadNIfTI(const std::string& path);
@@ -48,10 +57,13 @@ public:
 	void bind(int textureUnit);
 	void release();
 
-	glm::vec3 getVoxelSpacing() { return glm::vec3(spacingX, spacingY, spacingZ); }
-	glm::ivec3 getDimensions(); // - not implemented yet. (needed ?)
-	glm::vec3 getNormalizedSize() { return glm::vec3(normalizedSizeX,normalizedSizeY,normalizedSizeZ); }
+	const glm::vec3 getVoxelSpacing() const { return glm::vec3(spacingX, spacingY, spacingZ); }
+	const glm::ivec3 getDimensions() const { return glm::ivec3(nx, ny, nz); };
+	const glm::vec3 getNormalizedSize() const { return glm::vec3(normalizedSizeX,normalizedSizeY,normalizedSizeZ); }
 
-	std::vector<float> getData() { return data; }
+	const std::vector<float>& getData() { return data; }
 
+	bool isValid() const {
+		return (textureID != 0 && nx > 0 && ny > 0 && nz > 0 && !data.empty());
+	}
 };
