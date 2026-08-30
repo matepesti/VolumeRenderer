@@ -1,93 +1,186 @@
-﻿cmake_minimum_required(VERSION 3.20)
-project(VolumeRenderer VERSION 1.0 LANGUAGES CXX C)
+﻿cmake_minimum_required(VERSION 3.24)
 
+project(VolumeRenderer VERSION 1.0 LANGUAGES C CXX)
+
+# C++ configuration
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# -------------------------------------------------------
-# GLFW (pre-compiled binary)
-# -------------------------------------------------------
-add_library(glfw IMPORTED STATIC GLOBAL)
-set_target_properties(glfw PROPERTIES
-    IMPORTED_LOCATION "C:/GLFW/glfw-3.4.bin.WIN64/lib-vc2022/glfw3.lib"
-    INTERFACE_INCLUDE_DIRECTORIES "C:/GLFW/glfw-3.4.bin.WIN64/include"
+# Prefer static libraries for fetched dependencies.
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+include(FetchContent)
+
+# GLFW
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG 3.4
 )
 
-# -------------------------------------------------------
-# GLAD (local copy)
-# -------------------------------------------------------
+FetchContent_MakeAvailable(glfw)
+
+# GLM
+set(GLM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLM_BUILD_INSTALL OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.1
+)
+
+FetchContent_MakeAvailable(glm)
+
+# Dear ImGui
+
+# We use the docking branch because the application uses:
+#     ImGuiConfigFlags_DockingEnable
+# and the GLFW/OpenGL3 backends.
+
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG docking
+)
+
+FetchContent_MakeAvailable(imgui)
+
+
+# GLAD
 add_library(glad STATIC
-    ${CMAKE_SOURCE_DIR}/third_party/glad/src/glad.c)
+    ${CMAKE_SOURCE_DIR}/third_party/glad/src/glad.c
+)
+
 target_include_directories(glad PUBLIC
     ${CMAKE_SOURCE_DIR}/third_party/glad/include
 )
 
-# -------------------------------------------------------
-# GLM (header only)
-# -------------------------------------------------------
-add_library(glm INTERFACE)
-target_include_directories(glm INTERFACE
-    C:/GLM/glm-master
-)
 
-# -------------------------------------------------------
-# Dear ImGui (docking branch)
-# -------------------------------------------------------
+# Native File Dialog
+if(WIN32)
+
+    add_library(nfd STATIC
+        ${CMAKE_SOURCE_DIR}/third_party/nfd/nfd_win.cpp
+    )
+
+    target_include_directories(nfd PUBLIC
+        ${CMAKE_SOURCE_DIR}/third_party/nfd/include
+    )
+
+    target_link_libraries(nfd PRIVATE
+        comctl32
+        ole32
+        uuid
+    )
+
+else()
+
+    message(FATAL_ERROR
+        "Native File Dialog is currently implemented only for Windows."
+    )
+
+endif()
+
+# Dear ImGui
 add_library(imgui STATIC
-    C:/imgui/imgui-docking/imgui.cpp
-    C:/imgui/imgui-docking/imgui_draw.cpp
-    C:/imgui/imgui-docking/imgui_tables.cpp
-    C:/imgui/imgui-docking/imgui_widgets.cpp
-    C:/imgui/imgui-docking/backends/imgui_impl_glfw.cpp
-    C:/imgui/imgui-docking/backends/imgui_impl_opengl3.cpp)
+
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+)
+
 target_include_directories(imgui PUBLIC
-    C:/imgui/imgui-docking
-    C:/imgui/imgui-docking/backends
-    C:/GLFW/glfw-3.4.bin.WIN64/include
+
+    ${imgui_SOURCE_DIR}
+    ${imgui_SOURCE_DIR}/backends
+
+)
+
+target_link_libraries(imgui PUBLIC
+    glfw
+)
+
+# VolumeRenderer source files
+set(VOLUME_RENDERER_SOURCES
+
+    src/main.cpp
+
+    # Application
+    src/app/App.cpp
+    src/app/Config.cpp
+    src/app/Screenshot.cpp
+
+    # Camera
+    src/camera/Camera.cpp
+
+    # Volume
+    src/volume/Volume.cpp
+
+    # Renderer
+    src/renderer/Shader.cpp
+    src/renderer/VolumeRenderer.cpp
+    src/renderer/SmoothPass.cpp
+
+    # UI
+    src/ui/TransferFunction.cpp
+)
+
+# Executable
+add_executable(VolumeRenderer
+    ${VOLUME_RENDERER_SOURCES}
+)
+
+# Include directories
+target_include_directories(VolumeRenderer PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    # Local dependencies
     ${CMAKE_SOURCE_DIR}/third_party/glad/include
-)
-
-# -------------------------------------------------------
-# NFD
-# -------------------------------------------------------
-
-add_library(nfd STATIC
-    ${CMAKE_SOURCE_DIR}/third_party/nfd/nfd_win.cpp
-    #${CMAKE_SOURCE_DIR}/third_party/nfd/nfd_common.cpp
-)
-target_include_directories(nfd PUBLIC
+    ${CMAKE_SOURCE_DIR}/third_party/stb
     ${CMAKE_SOURCE_DIR}/third_party/nfd/include
 )
-target_link_libraries(nfd PRIVATE comctl32 ole32 uuid)
 
-# -------------------------------------------------------
-# VolumeRenderer executable
-# -------------------------------------------------------
-add_executable(VolumeRenderer
-    src/main.cpp
-    src/app/App.h
-    src/app/App.cpp
- "src/camera/Camera.h" "src/camera/Camera.cpp" "src/volume/Volume.h" "src/volume/Volume.cpp" "src/renderer/Shader.h" "src/renderer/Shader.cpp" "src/renderer/VolumeRenderer.h" "src/renderer/VolumeRenderer.cpp" "src/ui/TransferFunction.h" "src/ui/TransferFunction.cpp" "src/renderer/SmoothPass.h" "src/renderer/SmoothPass.cpp" "src/app/Config.h" "src/app/Config.cpp" "src/app/Utils.h" "src/app/Screenshot.h" "src/app/Screenshot.cpp")
-target_include_directories(VolumeRenderer PRIVATE
-    src/
-    ${CMAKE_SOURCE_DIR}/third_party/glad/include
-    C:/GLFW/glfw-3.4.bin.WIN64/include
-    C:/imgui/imgui-docking
-    C:/imgui/imgui-docking/backends
-    C:/GLM/glm-master
-    ${CMAKE_SOURCE_DIR}/third_party/stb
-)
+# Libraries
+
 target_link_libraries(VolumeRenderer PRIVATE
     glfw
+    glm::glm
     glad
-    glm
     imgui
-    opengl32
     nfd
 )
 
-add_custom_command(TARGET VolumeRenderer POST_BUILD
+if(WIN32)
+    target_link_libraries(VolumeRenderer PRIVATE
+        opengl32
+    )
+
+endif()
+
+# Copy shaders beside executable
+add_custom_command(
+    TARGET VolumeRenderer
+    POST_BUILD
+
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/shaders
-    $<TARGET_FILE_DIR:VolumeRenderer>/shaders
+
+        ${CMAKE_SOURCE_DIR}/shaders
+
+        $<TARGET_FILE_DIR:VolumeRenderer>/shaders
+)
+
+# Organize Visual Studio solution
+source_group(
+    TREE ${CMAKE_SOURCE_DIR}/src
+    FILES ${VOLUME_RENDERER_SOURCES}
 )
