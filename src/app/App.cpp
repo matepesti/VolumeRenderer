@@ -1,5 +1,6 @@
 #include "App.h"
 #include <iostream>
+#include <filesystem>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -157,15 +158,6 @@ void App::init() {
     glfwSetCursorPosCallback(m_window, s_mouseMoveCallback);
     glfwSetScrollCallback(m_window, s_scrollCallback);
 
-    if (m_volume.load("C:/Users/Pesti Máté/source/repos/VolumeRenderer/data/emd_1080.map")) {
-        m_volume.uploadToGPU();
-
-        printf("Loaded: %d x %d x %d, spacing %.3f %.3f %.3f\n",m_volume.getNx(), m_volume.getNy(), m_volume.getNz(),m_volume.getSpacingX(), m_volume.getSpacingY(), m_volume.getSpacingZ());
-    }
-    else {
-        std::cout << "Failed to load volume" << "\n";
-
-    }
     std::string exeDir = getExecutableDir();
     m_volumeRenderer.init(exeDir);
 
@@ -193,18 +185,10 @@ void App::init() {
 
     NFD_Init();
 
-
     m_configPath = getExecutableDir() + "/volumerenderer.cfg";
     AppConfig loaded;
     if (loadConfig(m_configPath, loaded)) {
-        m_config = loaded;
-        if (!m_config.lastVolumePath.empty()) {
-            if (m_volume.load(m_config.lastVolumePath)) {
-                m_volume.uploadToGPU();
-                m_lastLoadedPath = m_config.lastVolumePath;
-                m_volumeRenderer.getTransferFunction().computeHistogram(m_volume.getData());
-            }
-        }
+        m_config = loaded; 
         m_volumeRenderer.setSmoothSigma(m_config.smoothSigma);
         m_volumeRenderer.setRenderMode(m_config.renderMode);
         m_volumeRenderer.setIsoValue(m_config.isoValue);
@@ -214,14 +198,11 @@ void App::init() {
         if (!m_config.tfPoints.empty()) {
             TransferFunction tf = m_volumeRenderer.getTransferFunction();
             std::vector<ControlPoint> cpArray = tf.getControlPoints();
-            for (int i = 0; i < m_config.tfPoints.size(); i++) {
+            for (const auto& savedPoint : m_config.tfPoints) {
                 ControlPoint cp;
-                cp.pos = m_config.tfPoints[i].pos;
-                cp.opacity = m_config.tfPoints[i].opacity;
-                float r = m_config.tfPoints[i].r;
-                float g = m_config.tfPoints[i].g;
-                float b = m_config.tfPoints[i].b;
-                cp.color = glm::vec3(r,g,b);
+                cp.pos = savedPoint.pos;
+                cp.opacity = savedPoint.opacity;
+                cp.color = glm::vec3(savedPoint.r,savedPoint.g,savedPoint.b);
                 cpArray.push_back(cp);
             }
         }
@@ -229,44 +210,80 @@ void App::init() {
 }
 
 void App::mainLoop() {
-    while (!glfwWindowShouldClose(m_window) && m_running)
-    {
-        // poll all pending input events
+    while (!glfwWindowShouldClose(m_window) && m_running) {
         glfwPollEvents();
-        m_mousePressed = glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
 
-        // begin ImGui frame
+        m_mousePressed = glfwGetMouseButton(m_window,GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // build the UI for this frame
+        // Build the UI
         drawUI();
 
-        // frame timing
-        double frameStart = glfwGetTime();
+        // Handle volume loading after the UI has finished
 
-        // OpenGL rendering
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        if (m_pendingVolume) {
+            std::cout << "Uploading pending volume...\n";
+            m_volumeRenderer.releaseSmoothingResources();
+            m_pendingVolume->uploadToGPU();
+
+            if (m_pendingVolume->isValid()) {
+                std::cout << "Pending volume uploaded successfully.\n";
+                m_volume.release();
+                m_volume = std::move(*m_pendingVolume);
+                m_pendingVolume.reset();
+                m_volumeRenderer.resetSmoothing();
+                m_volumeRenderer.getTransferFunction().computeHistogram(m_volume.getData());
+
+                std::cout
+                    << "Loaded volume successfully:\n"
+                    << "  Path: "
+                    << m_lastLoadedPath
+                    << '\n'
+                    << "  Dimensions: "
+                    << m_volume.getNx()
+                    << " x "
+                    << m_volume.getNy()
+                    << " x "
+                    << m_volume.getNz()
+                    << '\n'
+                    << "  Spacing: "
+                    << m_volume.getSpacingX()
+                    << ", "
+                    << m_volume.getSpacingY()
+                    << ", "
+                    << m_volume.getSpacingZ()
+                    << '\n';
+            }
+            else {
+                std::cerr << "Pending volume GPU upload failed: " << m_lastLoadedPath << '\n';
+                m_pendingVolume.reset();
+                m_lastLoadedPath.clear();
+            }
+        }
+
+        double frameStart = glfwGetTime();
+        glClearColor(0.1f,0.1f,0.1f,1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        m_volumeRenderer.render(m_camera, m_volume);
+        if (m_volume.isValid()) {
+            m_volumeRenderer.render(m_camera,m_volume);
+        }
 
-        // render ImGui on top
         ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // swap front and back buffers to show the frame
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(m_window);
 
         double frameEnd = glfwGetTime();
-        double frameTime = (frameEnd - frameStart) * 1000; // ms
-        m_frameTimeMs = (float)frameTime;
+
+        m_frameTimeMs = static_cast<float>((frameEnd - frameStart) * 1000.0);
     }
 }
 
-void App::drawUI()
-{
+void App::drawUI() {
     // fullscreen dockspace so panels can be docked
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos);
@@ -296,27 +313,44 @@ void App::drawUI()
 
     if (ImGui::Button("Open Volume...")) {
         nfdchar_t* outPath = nullptr;
+
         nfdfilteritem_t filters[2] = {
             { "Volume files", "mrc,map,nii" },
             { "All files", "*" }
         };
-        nfdresult_t result = NFD_OpenDialog(&outPath, filters, 2, nullptr);
 
-        if (result == NFD_OKAY) {
+        nfdresult_t result =NFD_OpenDialog(&outPath,filters,2,nullptr);
+
+        if (result == NFD_OKAY){
             std::string path(outPath);
             NFD_FreePath(outPath);
 
-            // reload the volume
-            m_volume.release();
-            if (m_volume.load(path)) {
-                m_volume.uploadToGPU();
-                m_volumeRenderer.resetSmoothing();
+            std::cout << "Attempting to load:\n" << path << "\n";
+
+            Volume newVolume;
+
+            bool loadSuccessful = newVolume.load(path);
+
+            if (!loadSuccessful) {
+                std::cerr << "Failed to load volume: " << path << '\n';
+            }
+            else if (newVolume.getData().empty()) {
+                std::cerr << "Volume contains no voxel data: " << path << '\n';
+                loadSuccessful = false;
+            }
+
+            if (loadSuccessful) {
+                std::cout << "CPU load successful.\n";
+                // defer OpenGL texture creation/upload until
+                // after drawUI() has finished
+                m_pendingVolume = std::make_unique<Volume>(std::move(newVolume));
                 m_lastLoadedPath = path;
-                printf("Loaded: %s\n", path.c_str());
+
+                std::cout << "Volume queued for GPU upload.\n";
             }
-            else {
-                printf("Failed to load: %s\n", path.c_str());
-            }
+        }
+        else if (result == NFD_ERROR) {
+            std::cerr << "Native File Dialog error: " << NFD_GetError() << '\n';
         }
     }
 
@@ -338,9 +372,7 @@ void App::drawUI()
     ImGui::End();
 }
 
-void App::shutdown()
-{
-    m_config.lastVolumePath = m_lastLoadedPath;
+void App::shutdown() {
     m_config.smoothSigma = m_volumeRenderer.getSmoothSigma();
     m_config.renderMode = m_volumeRenderer.getRenderMode();
     m_config.isoValue = m_volumeRenderer.getIsoValue();
@@ -354,16 +386,19 @@ void App::shutdown()
     }
     saveConfig(m_configPath, m_config);
 
+    m_volumeRenderer.releaseSmoothingResources();
+    m_volume.release();
 
     NFD_Quit();
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    if (m_window)
-    {
+    if (m_window) {
         glfwDestroyWindow(m_window);
         m_window = nullptr;
     }
+
     glfwTerminate();
 }
